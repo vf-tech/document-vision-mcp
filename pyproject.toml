@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "document-vision-mcp"
+version = "0.1.0"
+description = "Local PDF search, rendering and precise zoom for hardware reference documents"
+requires-python = ">=3.10"
+dependencies = ["mcp>=1.26,<2", "PyMuPDF>=1.26.6,<2"]
+
+[project.optional-dependencies]
+test = ["pytest>=8,<10"]
+
+[project.scripts]
+document-vision-mcp = "document_vision_mcp.server:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
