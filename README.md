@@ -18,8 +18,110 @@ port acmaz, kaynak PDF'leri degistirmez ve ag istegi gondermez.
 
 ## Kurulum
 
-Gereksinimler: Python 3.10+, Codex CLI. Once zip'i acin; icindeki
-`document-vision-mcp` klasorune girin. PDF'lerinizi ayri bir dizinde tutabilirsiniz.
+GitHub'dan clone ve proje venv'i olmadan kurmak için aşağıdaki uv/uvx yöntemini
+kullanın. Yerel kurulum alternatiflerinde Python 3.10+ ve Codex CLI gerekir;
+zip'i açıp `document-vision-mcp` klasörüne girin. PDF'ler ayrı dizinlerde tutulabilir.
+
+
+### GitHub'dan uv / uvx ile kurulum (yerel clone veya venv gerekmez)
+
+Ön koşullar: Linux/WSL veya Windows ortamında `uv`, `git` ve Codex CLI
+kurulu olmalıdır. `uvx`, `uv` ile birlikte gelir; kurulum için
+[resmi uv yönergelerini](https://docs.astral.sh/uv/getting-started/installation/)
+kullanın. WSL'de Linux `uv`/`uvx` kullanın. İlk kurulum GitHub ve Python paket
+kaynaklarına ağ erişimi gerektirir; Python ortamını ve bağımlılıkları uv yönetir.
+
+| İhtiyaç | Yöntem |
+|---|---|
+| MCP başlarken paket gerektiğinde hazırlansın | `uvx --from ...` |
+| Araç bir kez kalıcı, izole ortama kurulsun | `uv tool install ...` |
+
+Aşağıdaki örnekler test edilen kaynak commit'ine sabittir:
+`17746ebe775e0e78c5bc94dc4ae300fc883253a7`.
+Bu, uygulama kaynağını sabitler; tüm transitif bağımlılıkları kilitlemez.
+Geliştirme dalını takip etmek isterseniz URL'deki commit yerine `master`
+kullanabilirsiniz. Günlük kullanımda sabit commit tercih edilir.
+
+#### Seçenek A — uvx ile otomatik hazırlama ve çalıştırma
+
+Önce terminalde bir kez çalıştırın. `--help` için PDF kök klasörü gerekmez:
+
+```bash
+uvx --from 'git+https://github.com/vf-tech/document-vision-mcp.git@17746ebe775e0e78c5bc94dc4ae300fc883253a7' document-vision-mcp --help
+```
+
+Bu işlem kaynak kodunu indirip paketi derler ve izole önbellek ortamını hazırlar.
+Sonraki çalıştırmalar hazır ortamı yeniden kullanabilir; önbellek temizlenirse
+yeniden hazırlama gerekir. İlk hazırlama MCP'nin başlangıç süresini aşabileceği
+için bu terminal adımını Codex'e bağlamadan önce tamamlayın.
+
+Global `~/.codex/config.toml` dosyasındaki **mevcut** sunucu tanımını değiştirin;
+aynı tabloyu ikinci kez eklemeyin:
+
+```toml
+[mcp_servers.document-vision]
+command = "uvx"
+args = [
+  "--from",
+  "git+https://github.com/vf-tech/document-vision-mcp.git@17746ebe775e0e78c5bc94dc4ae300fc883253a7",
+  "document-vision-mcp"
+]
+startup_timeout_sec = 120
+```
+
+Codex `uvx` komutunu PATH üzerinden bulabilmelidir. Bulamazsa `command`
+alanına kendi ortamınızdaki uvx çalıştırılabilir dosyasının mutlak yolunu yazın.
+
+#### Seçenek B — uv tool install ile kalıcı kurulum
+
+```bash
+uv tool install 'git+https://github.com/vf-tech/document-vision-mcp.git@17746ebe775e0e78c5bc94dc4ae300fc883253a7'
+uv tool update-shell
+```
+
+Gerekirse terminali yeniden açın ve komutun bulunduğunu doğrulayın:
+
+```bash
+document-vision-mcp --help
+```
+
+Bu yöntem için global MCP tanımı:
+
+```toml
+[mcp_servers.document-vision]
+command = "document-vision-mcp"
+args = []
+```
+
+Codex'in PATH ortamı bu komutu içermelidir; gerekirse `command` alanına kurulu
+çalıştırılabilir dosyanın mutlak yolunu yazın. Bu yöntem de projelerin Python
+ortamlarından bağımsız bir uv araç ortamı kullanır.
+
+#### Her iki yöntemde proje klasörleri ve güncelleme
+
+Mevcut proje `DOCUMENT_VISION_ROOT` / `DOCUMENT_VISION_ROOTS` ve `cwd` ayarları
+aynen geçerlidir; aşağıdaki proje ayarı bölümüne bakın. Projelerde eski
+`command` / `args` tanımları varsa yeni global yöntemi geçersiz kılmamaları için
+güncelleyin veya kaldırın. Projeye göre klasör seçerken global `args` içine
+`--root` / `--roots` eklemeyin. Yeni Codex oturumu açın.
+
+Güncelleme için hedef commit'i bilinçli olarak değiştirin: uvx yönteminde global
+`args` içindeki URL'yi güncelleyip yeni URL ile `--help` adımını çalıştırın.
+Kalıcı yöntemde yeni URL ile `uv tool install --force 'git+https://…@COMMIT'`
+komutunu çalıştırın (örnekteki URL ve COMMIT gerçek değerlerle değiştirilmelidir).
+Commit'e sabitlenen kurulum, yeni depo commit'lerine kendiliğinden geçmez.
+
+2026-10-16 doğrulaması: uv 0.12.23 / Linux üzerinde GitHub'dan uvx ile kurulum,
+kalıcı uv tool kurulumu ve her iki komutun `--help` çıktısı başarılıdır.
+uvx üzerinden gerçek stdio MCP oturumunda 6 araç, iki göreli kök, aynı adlı
+PDF'ler, metin arama/çıkarma, sayfa render ve PNG crop doğrulandı. Hazır
+önbellekle MCP başlangıcı yaklaşık 6,4 saniye sürdü; bu bir performans garantisi
+değildir. Native Windows ve gerçek Codex/model oturumu bu testte çalıştırılmadı.
+
+Kaynaklar:
+[uv araç kullanımı](https://docs.astral.sh/uv/guides/tools/),
+[araç ortamları ve önbellek](https://docs.astral.sh/uv/concepts/tools/),
+[Codex MCP yapılandırması](https://developers.openai.com/codex/mcp).
 
 ### Linux / WSL (Windows bağımlılığı olmadan)
 
